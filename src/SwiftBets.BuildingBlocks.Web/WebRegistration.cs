@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using SwiftBets.BuildingBlocks.Core;
@@ -55,6 +56,18 @@ public static class WebRegistration
             .AddPolicy(Roles.Operator, p => p.RequireRole(Roles.Operator, Roles.Admin))
             .AddPolicy(Roles.Admin, p => p.RequireRole(Roles.Admin))
             .AddPolicy(Roles.Service, p => p.RequireRole(Roles.Service));
+        return services;
+    }
+
+    public static IServiceCollection AddClientCredentials(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddValidatedOptions<ClientCredentialsOptions>(configuration, ClientCredentialsOptions.SectionName);
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddHttpClient(nameof(ClientCredentialsTokenProvider));
+        services.AddSingleton(sp => new ClientCredentialsTokenProvider(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ClientCredentialsTokenProvider)),
+            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ClientCredentialsOptions>>(),
+            sp.GetRequiredService<TimeProvider>()));
         return services;
     }
 
