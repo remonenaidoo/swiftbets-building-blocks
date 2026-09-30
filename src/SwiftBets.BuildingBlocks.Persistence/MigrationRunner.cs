@@ -1,4 +1,6 @@
+using Dapper;
 using DbUp;
+using Microsoft.Data.SqlClient;
 using DbUp.Builder;
 using DbUp.Engine;
 using DbUp.Support;
@@ -25,6 +27,21 @@ public static class MigrationRunner
         }
 
         return Run(DeployChanges.To.PostgresqlDatabase(connectionString).JournalToPostgresqlTable("public", "schemaversions"), sources);
+    }
+
+    /// <summary>
+    /// Maps a server login into the database as a member of <c>swiftbets_app</c>, the least-privilege role the
+    /// service's own migrations grant schema rights to. The login itself is created by the platform, never here.
+    /// </summary>
+    public static async Task GrantSqlServerAppLoginAsync(string connectionString, string login, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(login);
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await connection.ExecuteAsync(new CommandDefinition(
+            SqlResources.For<SqlServerInboxStore>().Get("Security.GrantAppLogin"),
+            new { Login = login },
+            cancellationToken: cancellationToken)).ConfigureAwait(false);
     }
 
     private static DatabaseUpgradeResult Run(UpgradeEngineBuilder builder, MigrationSource[] sources)

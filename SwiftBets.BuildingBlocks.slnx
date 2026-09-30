@@ -5,6 +5,7 @@
     <Project Path="src/SwiftBets.BuildingBlocks.Observability/SwiftBets.BuildingBlocks.Observability.csproj" />
     <Project Path="src/SwiftBets.BuildingBlocks.Outbox/SwiftBets.BuildingBlocks.Outbox.csproj" />
     <Project Path="src/SwiftBets.BuildingBlocks.Persistence/SwiftBets.BuildingBlocks.Persistence.csproj" />
+    <Project Path="src/SwiftBets.BuildingBlocks.Redis/SwiftBets.BuildingBlocks.Redis.csproj" />
     <Project Path="src/SwiftBets.BuildingBlocks.Resilience/SwiftBets.BuildingBlocks.Resilience.csproj" />
     <Project Path="src/SwiftBets.BuildingBlocks.Testing/SwiftBets.BuildingBlocks.Testing.csproj" />
     <Project Path="src/SwiftBets.BuildingBlocks.Web/SwiftBets.BuildingBlocks.Web.csproj" />
