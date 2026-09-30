@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
@@ -38,6 +39,7 @@ public static class TestJwt
             var configuration = new OpenIdConnectConfiguration { Issuer = Issuer };
             configuration.SigningKeys.Add(Key);
             options.Configuration = configuration;
+            options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(configuration);
             options.TokenValidationParameters.ValidIssuer = Issuer;
             options.TokenValidationParameters.ValidAudience = Audience;
         });
