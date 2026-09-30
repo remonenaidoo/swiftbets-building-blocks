@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SwiftBets.BuildingBlocks.Core/SwiftBets.BuildingBlocks.Core.csproj" />
+    <Project Path="src/SwiftBets.BuildingBlocks.Messaging/SwiftBets.BuildingBlocks.Messaging.csproj" />
+    <Project Path="src/SwiftBets.BuildingBlocks.Observability/SwiftBets.BuildingBlocks.Observability.csproj" />
+    <Project Path="src/SwiftBets.BuildingBlocks.Outbox/SwiftBets.BuildingBlocks.Outbox.csproj" />
+    <Project Path="src/SwiftBets.BuildingBlocks.Persistence/SwiftBets.BuildingBlocks.Persistence.csproj" />
+    <Project Path="src/SwiftBets.BuildingBlocks.Resilience/SwiftBets.BuildingBlocks.Resilience.csproj" />
+    <Project Path="src/SwiftBets.BuildingBlocks.Testing/SwiftBets.BuildingBlocks.Testing.csproj" />
+    <Project Path="src/SwiftBets.BuildingBlocks.Web/SwiftBets.BuildingBlocks.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SwiftBets.BuildingBlocks.IntegrationTests/SwiftBets.BuildingBlocks.IntegrationTests.csproj" />
+    <Project Path="tests/SwiftBets.BuildingBlocks.Tests/SwiftBets.BuildingBlocks.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>SwiftBets.BuildingBlocks.Outbox</PackageId>
+    <Description>Transactional outbox for SQL Server with a lease-claiming relay.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+
+    <PackageReference Include="prometheus-net" />
+    <ProjectReference Include="../SwiftBets.BuildingBlocks.Messaging/SwiftBets.BuildingBlocks.Messaging.csproj" />
+    <ProjectReference Include="../SwiftBets.BuildingBlocks.Persistence/SwiftBets.BuildingBlocks.Persistence.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Sql/*.sql" />
+    <EmbeddedResource Include="Migrations/*.sql" />
+  </ItemGroup>
+</Project>

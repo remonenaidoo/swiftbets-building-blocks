@@ -1,0 +1,1 @@
+SELECT COUNT_BIG(*) FROM outbox.Messages WHERE SentAt IS NULL;

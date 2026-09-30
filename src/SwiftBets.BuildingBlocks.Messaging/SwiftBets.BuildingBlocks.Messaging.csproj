@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>SwiftBets.BuildingBlocks.Messaging</PackageId>
+    <Description>Kafka producer and consumer host: envelopes, headers, validation, dead-lettering, deferred delivery.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    <PackageReference Include="Confluent.Kafka" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="prometheus-net" />
+    <ProjectReference Include="../SwiftBets.BuildingBlocks.Core/SwiftBets.BuildingBlocks.Core.csproj" />
+    <ProjectReference Include="../SwiftBets.BuildingBlocks.Resilience/SwiftBets.BuildingBlocks.Resilience.csproj" />
+  </ItemGroup>
+</Project>

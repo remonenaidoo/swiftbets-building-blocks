@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Core/SwiftBets.BuildingBlocks.Core.csproj" />
+    <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Resilience/SwiftBets.BuildingBlocks.Resilience.csproj" />
+    <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Observability/SwiftBets.BuildingBlocks.Observability.csproj" />
+    <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Web/SwiftBets.BuildingBlocks.Web.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Shouldly" />
+  </ItemGroup>
+</Project>
