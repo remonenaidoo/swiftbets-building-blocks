@@ -11,6 +11,7 @@
     <PackageReference Include="dbup-postgresql" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <ProjectReference Include="../SwiftBets.BuildingBlocks.Core/SwiftBets.BuildingBlocks.Core.csproj" />
     <ProjectReference Include="../SwiftBets.BuildingBlocks.Resilience/SwiftBets.BuildingBlocks.Resilience.csproj" />
   </ItemGroup>

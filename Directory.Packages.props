@@ -11,6 +11,7 @@
     <PackageVersion Include="dbup-postgresql" Version="7.0.1" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.12" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.84.0" />
     <PackageVersion Include="Polly.Core" Version="8.8.0" />
     <PackageVersion Include="Microsoft.Extensions.Resilience" Version="10.10.0" />

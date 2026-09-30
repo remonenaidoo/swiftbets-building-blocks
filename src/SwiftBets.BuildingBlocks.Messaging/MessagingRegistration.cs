@@ -18,6 +18,7 @@ public static class MessagingRegistration
         services.AddSwiftBetsResilience();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<IEventPublisher, KafkaEventPublisher>();
+        services.AddHealthChecks().AddCheck<KafkaHealthCheck>("kafka", tags: ["ready"], timeout: TimeSpan.FromSeconds(5));
         return services;
     }
 
