@@ -75,36 +75,36 @@ public sealed partial class OutboxRelay(
             return 0;
         }
 
-        var sent = new List<Guid>(claimed.Count);
-        var blockedKeys = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var message in claimed)
-        {
-            if (blockedKeys.Contains(message.MessageKey))
+        var sent = new System.Collections.Concurrent.ConcurrentBag<Guid>();
+        await Parallel.ForEachAsync(
+            claimed.GroupBy(m => m.MessageKey, StringComparer.Ordinal),
+            new ParallelOptions { MaxDegreeOfParallelism = 16, CancellationToken = cancellationToken },
+            async (group, token) =>
             {
-                continue;
-            }
+                foreach (var message in group)
+                {
+                    try
+                    {
+                        var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(message.Headers) ?? [];
+                        await publisher.PublishRawAsync(new OutgoingMessage(message.Topic, message.MessageKey, message.Payload, headers), token).ConfigureAwait(false);
+                        sent.Add(message.Id);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        OutboxMetrics.Failed.Inc();
+                        LogPublishFailed(ex, message.Id, message.Topic, message.AttemptCount + 1);
+                        await MarkFailedAsync(message, ex, token).ConfigureAwait(false);
+                        return;
+                    }
+                }
+            }).ConfigureAwait(false);
 
-            try
-            {
-                var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(message.Headers) ?? [];
-                await publisher.PublishRawAsync(new OutgoingMessage(message.Topic, message.MessageKey, message.Payload, headers), cancellationToken).ConfigureAwait(false);
-                sent.Add(message.Id);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                blockedKeys.Add(message.MessageKey);
-                OutboxMetrics.Failed.Inc();
-                LogPublishFailed(ex, message.Id, message.Topic, message.AttemptCount + 1);
-                await MarkFailedAsync(message, ex, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        if (sent.Count > 0)
+        if (!sent.IsEmpty)
         {
             await using var connection = await connections.OpenAsync(cancellationToken).ConfigureAwait(false);
             await connection.ExecuteAsync(new CommandDefinition(
                 Sql.Get("Outbox.MarkSent"),
-                new { Ids = sent, Now = time.GetUtcNow(), Owner = _owner },
+                new { Ids = sent.ToList(), Now = time.GetUtcNow(), Owner = _owner },
                 cancellationToken: CancellationToken.None)).ConfigureAwait(false);
             OutboxMetrics.Published.Inc(sent.Count);
         }
