@@ -16,7 +16,25 @@ public static class MigrationRunner
             EnsureDatabase.For.SqlDatabase(connectionString);
         }
 
+        EnableReadCommittedSnapshot(connectionString);
         return Run(DeployChanges.To.SqlDatabase(connectionString).JournalToSqlTable("dbo", "SchemaVersions"), sources);
+    }
+
+    /// <summary>
+    /// Readers see the last committed version instead of queueing behind writers (Azure SQL's default). Money paths do not
+    /// rely on read blocking: they take explicit UPDLOCK/READPAST locks and unique indexes arbitrate duplicates.
+    /// Runs outside a transaction, as ALTER DATABASE requires.
+    /// </summary>
+    private static void EnableReadCommittedSnapshot(string connectionString)
+    {
+        using var connection = new SqlConnection(connectionString);
+        connection.Open();
+        if (connection.ExecuteScalar<bool>("SELECT is_read_committed_snapshot_on FROM sys.databases WHERE database_id = DB_ID()"))
+        {
+            return;
+        }
+
+        connection.Execute("ALTER DATABASE CURRENT SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE", commandTimeout: 120);
     }
 
     public static DatabaseUpgradeResult RunPostgres(string connectionString, bool ensureDatabase, params MigrationSource[] sources)
