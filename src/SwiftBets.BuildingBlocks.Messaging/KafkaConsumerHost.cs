@@ -99,7 +99,7 @@ public sealed partial class KafkaConsumerHost<TPayload> : BackgroundService
                     continue;
                 }
 
-                var hold = await ProcessAsync(result, stoppingToken).ConfigureAwait(false);
+                var hold = await ProcessSafelyAsync(result, stoppingToken).ConfigureAwait(false);
                 if (hold is { } until)
                 {
                     consumer.Pause([result.TopicPartition]);
@@ -118,6 +118,27 @@ public sealed partial class KafkaConsumerHost<TPayload> : BackgroundService
         finally
         {
             consumer.Close();
+        }
+    }
+
+    /// <summary>
+    /// No single message may stop the consumer: anything that escapes processing, including a dead-letter publish that
+    /// fails, becomes a paused redelivery with backoff instead of an unhandled exception that would stop the host.
+    /// </summary>
+    private async Task<DateTimeOffset?> ProcessSafelyAsync(ConsumeResult<string, byte[]> result, CancellationToken stoppingToken)
+    {
+        try
+        {
+            return await ProcessAsync(result, stoppingToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
+        {
+            var attempt = _transientAttempts.GetValueOrDefault(result.TopicPartitionOffset) + 1;
+            _transientAttempts[result.TopicPartitionOffset] = attempt;
+            var backoff = TimeSpan.FromSeconds(Math.Min(Math.Pow(2, attempt - 1), _options.MaxTransientBackoffSeconds));
+            LogProcessingFailed(ex, Topic.Value, result.Partition.Value, result.Offset.Value, attempt, backoff);
+            MessagingMetrics.Consumed.WithLabels(Topic.Value, "processing_failure").Inc();
+            return _time.GetUtcNow() + backoff;
         }
     }
 
@@ -266,6 +287,9 @@ public sealed partial class KafkaConsumerHost<TPayload> : BackgroundService
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Transient failure on {Topic}[{Partition}]@{Offset}, attempt {Attempt}; redelivering in {Backoff}")]
     private partial void LogTransientFailure(Exception exception, string topic, int partition, long offset, int attempt, TimeSpan backoff);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Processing {Topic}[{Partition}]@{Offset} failed outside the handler (attempt {Attempt}); redelivering in {Backoff}")]
+    private partial void LogProcessingFailed(Exception exception, string topic, int partition, long offset, int attempt, TimeSpan backoff);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Dead-lettered {Topic}[{Partition}]@{Offset}: {Reason}")]
     private partial void LogDeadLettered(string topic, int partition, long offset, string reason);

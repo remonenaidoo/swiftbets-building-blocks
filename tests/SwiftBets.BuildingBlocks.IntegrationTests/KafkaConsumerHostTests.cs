@@ -40,6 +40,19 @@ public sealed class KafkaConsumerHostTests(RedpandaFixture redpanda)
         harness.DeadLetterIsEmpty().ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task Unpublishable_dead_letter_keeps_the_consumer_alive_and_retries()
+    {
+        await using var harness = await Harness.StartAsync(redpanda, failuresBeforeSuccess: 0, failDeadLetters: true);
+
+        await harness.PublishRawAsync("{not json"u8.ToArray());
+        await harness.PublishAsync("after-poison");
+        await Task.Delay(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
+
+        harness.IsRunning.ShouldBeTrue();
+        harness.Handled.ShouldBeEmpty();
+    }
+
     private sealed class Harness : IAsyncDisposable
     {
         private readonly IHost _host;
@@ -61,7 +74,9 @@ public sealed class KafkaConsumerHostTests(RedpandaFixture redpanda)
 
         public int Attempts => _state.Attempts;
 
-        public static async Task<Harness> StartAsync(RedpandaFixture redpanda, int failuresBeforeSuccess)
+        public bool IsRunning => !_host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.IsCancellationRequested;
+
+        public static async Task<Harness> StartAsync(RedpandaFixture redpanda, int failuresBeforeSuccess, bool failDeadLetters = false)
         {
             var environment = Kafka.UniqueEnvironment();
             var topic = TopicName.For(TopicBase, environment);
@@ -76,7 +91,7 @@ public sealed class KafkaConsumerHostTests(RedpandaFixture redpanda)
                 {
                     services.AddSingleton(state);
                     services.AddSingleton(TimeProvider.System);
-                    services.AddSingleton<IEventPublisher>(publisher);
+                    services.AddSingleton<IEventPublisher>(failDeadLetters ? new DeadLetterRefusingPublisher(publisher) : publisher);
                     services.AddSingleton(options);
                     services.AddKafkaConsumer<TestEvent, RecordingHandler>(TopicBase, "group-" + environment);
                 })
@@ -130,6 +145,17 @@ public sealed class KafkaConsumerHostTests(RedpandaFixture redpanda)
             consumer.Subscribe(_topic + ".dlq");
             return consumer;
         }
+    }
+
+    private sealed class DeadLetterRefusingPublisher(IEventPublisher inner) : IEventPublisher
+    {
+        public Task PublishAsync<TPayload>(string topicBase, string key, EventEnvelope<TPayload> envelope, CancellationToken cancellationToken)
+            where TPayload : IEventContract => inner.PublishAsync(topicBase, key, envelope, cancellationToken);
+
+        public Task PublishRawAsync(OutgoingMessage message, CancellationToken cancellationToken) =>
+            message.Topic.EndsWith(".dlq", StringComparison.Ordinal)
+                ? throw new TimeoutException("dead-letter topic unavailable")
+                : inner.PublishRawAsync(message, cancellationToken);
     }
 
     private sealed class RecordingHandler(RecordingHandler.State state) : IEventHandler<TestEvent>
