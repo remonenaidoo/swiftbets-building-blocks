@@ -61,7 +61,7 @@ public sealed partial class KafkaConsumerHost<TPayload> : BackgroundService
             ClientId = _options.ClientId,
             GroupId = _registration.GroupId,
             EnableAutoCommit = false,
-            AutoOffsetReset = AutoOffsetReset.Earliest,
+            AutoOffsetReset = _registration.StartAtLatest ? AutoOffsetReset.Latest : AutoOffsetReset.Earliest,
             IsolationLevel = IsolationLevel.ReadCommitted,
             AllowAutoCreateTopics = false,
         };
