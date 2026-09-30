@@ -55,7 +55,8 @@ public static class WebRegistration
             .AddPolicy(Roles.Punter, p => p.RequireRole(Roles.Punter))
             .AddPolicy(Roles.Operator, p => p.RequireRole(Roles.Operator, Roles.Admin))
             .AddPolicy(Roles.Admin, p => p.RequireRole(Roles.Admin))
-            .AddPolicy(Roles.Service, p => p.RequireRole(Roles.Service));
+            .AddPolicy(Roles.Service, p => p.RequireRole(Roles.Service))
+            .AddPolicy(Roles.OperatorOrService, p => p.RequireRole(Roles.Operator, Roles.Admin, Roles.Service));
         return services;
     }
 

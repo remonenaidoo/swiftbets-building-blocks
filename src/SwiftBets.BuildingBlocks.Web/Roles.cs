@@ -6,4 +6,5 @@ public static class Roles
     public const string Operator = "Operator";
     public const string Admin = "Admin";
     public const string Service = "Service";
+    public const string OperatorOrService = "OperatorOrService";
 }
