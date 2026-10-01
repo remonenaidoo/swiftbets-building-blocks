@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>SwiftBets.BuildingBlocks.Web</PackageId>
-    <Description>Error envelope mapping, validation filter, security headers and JWT bearer validation.</Description>
+    <Description>Error envelope mapping, validation filter, security headers, JWT bearer validation and webhook signatures.</Description>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
