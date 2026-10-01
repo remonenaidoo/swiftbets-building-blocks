@@ -1,0 +1,1 @@
+CREATE TABLE rb.Widgets (Id int NOT NULL PRIMARY KEY);

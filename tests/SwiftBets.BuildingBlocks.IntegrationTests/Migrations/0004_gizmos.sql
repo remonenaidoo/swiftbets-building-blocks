@@ -1,0 +1,1 @@
+CREATE TABLE rb.Gizmos (Id int NOT NULL PRIMARY KEY);
