@@ -16,7 +16,8 @@
     <ProjectReference Include="../SwiftBets.BuildingBlocks.Resilience/SwiftBets.BuildingBlocks.Resilience.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Sql/*.sql" />
+    <EmbeddedResource Include="Sql/**/*.sql" />
     <EmbeddedResource Include="Migrations/*.sql" />
+    <EmbeddedResource Include="Postgres/**/*.sql" />
   </ItemGroup>
 </Project>
