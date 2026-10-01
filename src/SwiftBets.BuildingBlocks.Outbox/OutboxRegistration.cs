@@ -29,6 +29,15 @@ public static class OutboxRegistration
         return services.AddRelay(configuration, runRelay);
     }
 
+    /// <summary>Registers <see cref="IAuditWriter"/> for a service that already has an outbox; Service names it in the trail.</summary>
+    public static IServiceCollection AddAuditWriter(this IServiceCollection services, string service)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(service);
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IAuditWriter>(sp => new AuditWriter(sp.GetRequiredService<IOutbox>(), sp.GetRequiredService<TimeProvider>(), service));
+        return services;
+    }
+
     private static IServiceCollection AddRelay(this IServiceCollection services, IConfiguration configuration, bool runRelay)
     {
         services.AddValidatedOptions<OutboxOptions>(configuration, OutboxOptions.SectionName);

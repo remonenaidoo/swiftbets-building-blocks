@@ -15,6 +15,7 @@
     <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Resilience/SwiftBets.BuildingBlocks.Resilience.csproj" />
     <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Observability/SwiftBets.BuildingBlocks.Observability.csproj" />
     <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Web/SwiftBets.BuildingBlocks.Web.csproj" />
+    <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Outbox/SwiftBets.BuildingBlocks.Outbox.csproj" />
     <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Testing/SwiftBets.BuildingBlocks.Testing.csproj" />
   </ItemGroup>
   <ItemGroup>
