@@ -113,13 +113,22 @@ public sealed partial class CompactedStateConsumer<TPayload> : BackgroundService
         while (true)
         {
             stoppingToken.ThrowIfCancellationRequested();
-            var topic = admin.GetMetadata(Topic.Value, TimeSpan.FromSeconds(10)).Topics.SingleOrDefault();
-            if (topic is { Error.IsError: false, Partitions.Count: > 0 })
+            // An unreachable broker at start-up is waited out like a missing topic; throwing here would stop the host.
+            try
             {
-                return [.. topic.Partitions.Select(p => new TopicPartition(Topic.Value, p.PartitionId))];
+                var topic = admin.GetMetadata(Topic.Value, TimeSpan.FromSeconds(10)).Topics.SingleOrDefault();
+                if (topic is { Error.IsError: false, Partitions.Count: > 0 })
+                {
+                    return [.. topic.Partitions.Select(p => new TopicPartition(Topic.Value, p.PartitionId))];
+                }
+
+                LogTopicMissing(Topic.Value);
+            }
+            catch (KafkaException ex)
+            {
+                LogBrokerUnavailable(ex, Topic.Value);
             }
 
-            LogTopicMissing(Topic.Value);
             stoppingToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(2));
         }
     }
@@ -176,6 +185,9 @@ public sealed partial class CompactedStateConsumer<TPayload> : BackgroundService
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "State topic {Topic} has no partitions yet; retrying")]
     private partial void LogTopicMissing(string topic);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Broker unavailable while reading state topic {Topic}; retrying")]
+    private partial void LogBrokerUnavailable(Exception exception, string topic);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Consume error on state topic {Topic}")]
     private partial void LogConsumeError(Exception exception, string topic);
