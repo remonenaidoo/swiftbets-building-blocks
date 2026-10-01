@@ -22,9 +22,20 @@ public static class FaultEndpoints
         }
 
         var group = endpoints.MapGroup("/faults").RequireAuthorization(Roles.OperatorOrService);
-        group.MapGet("/", () => Results.Ok(faults.Armed));
-        group.MapPost("/{name}", (string name, int? times, HttpContext context) =>
+        group.MapGet("/", () => Results.Ok(new { faults.Armed, faults.ArmedUntil }));
+        group.MapPost("/{name}", (string name, int? times, int? seconds, HttpContext context) =>
         {
+            if (seconds is not null)
+            {
+                if (seconds is < 1 or > 3_600 || times is not null)
+                {
+                    return Error.Validation("invalid_seconds", "seconds must be between 1 and 3600, and not combined with times.").ToHttpResult(context);
+                }
+
+                faults.ArmFor(name, TimeSpan.FromSeconds(seconds.Value));
+                return Results.Ok(new { name, armedUntil = faults.ArmedUntil.GetValueOrDefault(name) });
+            }
+
             if (times is < 1 or > 100_000)
             {
                 return Error.Validation("invalid_times", "times must be between 1 and 100000.").ToHttpResult(context);
