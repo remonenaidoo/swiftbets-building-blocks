@@ -46,7 +46,7 @@ public sealed class OutboxTests(SqlServerFixture sql, RedpandaFixture redpanda)
         }
 
         using var publisher = Kafka.Publisher(kafka);
-        var relay = new OutboxRelay(connections, publisher, Options.Create(new OutboxOptions()), TimeProvider.System, NullLogger<OutboxRelay>.Instance);
+        var relay = new OutboxRelay(DbOutboxStore.SqlServer(connections), publisher, Options.Create(new OutboxOptions()), TimeProvider.System, NullLogger<OutboxRelay>.Instance);
 
         (await relay.RelayOnceAsync(TestContext.Current.CancellationToken)).ShouldBe(1);
         (await relay.RelayOnceAsync(TestContext.Current.CancellationToken)).ShouldBe(0);

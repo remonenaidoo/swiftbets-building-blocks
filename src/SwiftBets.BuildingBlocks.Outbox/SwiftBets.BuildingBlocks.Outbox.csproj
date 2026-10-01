@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>SwiftBets.BuildingBlocks.Outbox</PackageId>
-    <Description>Transactional outbox for SQL Server with a lease-claiming relay.</Description>
+    <Description>Transactional outbox for SQL Server and Postgres with a lease-claiming relay.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
@@ -14,7 +14,8 @@
     <ProjectReference Include="../SwiftBets.BuildingBlocks.Persistence/SwiftBets.BuildingBlocks.Persistence.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Sql/*.sql" />
+    <EmbeddedResource Include="Sql/**/*.sql" />
     <EmbeddedResource Include="Migrations/*.sql" />
+    <EmbeddedResource Include="Postgres/**/*.sql" />
   </ItemGroup>
 </Project>

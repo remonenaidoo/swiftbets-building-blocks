@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -34,6 +35,24 @@ public static class MessagingRegistration
             sp.GetRequiredService<IOptions<KafkaOptions>>(),
             sp.GetRequiredService<TimeProvider>(),
             sp.GetRequiredService<ILogger<KafkaConsumerHost<TPayload>>>()));
+        return services;
+    }
+
+    /// <summary>Keeps the latest value per key of a compacted topic in memory; readiness waits until it has caught up.</summary>
+    public static IServiceCollection AddCompactedState<TPayload>(this IServiceCollection services, string topicBase)
+        where TPayload : IEventContract
+    {
+        services.AddSingleton(sp => new CompactedStateConsumer<TPayload>(
+            topicBase,
+            sp.GetRequiredService<IOptions<KafkaOptions>>(),
+            sp.GetRequiredService<ILogger<CompactedStateConsumer<TPayload>>>()));
+        services.AddSingleton<ICompactedState<TPayload>>(sp => sp.GetRequiredService<CompactedStateConsumer<TPayload>>());
+        services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<CompactedStateConsumer<TPayload>>());
+        services.AddHealthChecks().Add(new HealthCheckRegistration(
+            $"state-{topicBase}",
+            sp => sp.GetRequiredService<CompactedStateConsumer<TPayload>>(),
+            HealthStatus.Unhealthy,
+            ["ready"]));
         return services;
     }
 }

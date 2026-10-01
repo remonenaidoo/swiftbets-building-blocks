@@ -24,6 +24,7 @@ public static class PersistenceRegistration
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton(NpgsqlDataSource.Create(connectionString));
+        services.TryAddSingleton<IInboxStore, PostgresInboxStore>();
         services.AddHealthChecks().Add(new HealthCheckRegistration("postgres", sp => new PostgresHealthCheck(sp.GetRequiredService<NpgsqlDataSource>()), HealthStatus.Unhealthy, [ReadyTag], TimeSpan.FromSeconds(5)));
         return services;
     }

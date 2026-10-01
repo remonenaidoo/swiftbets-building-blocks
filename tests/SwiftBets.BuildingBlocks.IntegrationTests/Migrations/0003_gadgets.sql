@@ -1,0 +1,1 @@
+CREATE TABLE rb.Gadgets (Id int NOT NULL PRIMARY KEY);

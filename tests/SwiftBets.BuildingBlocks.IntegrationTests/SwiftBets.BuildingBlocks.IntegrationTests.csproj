@@ -16,6 +16,10 @@
     <ProjectReference Include="../../src/SwiftBets.BuildingBlocks.Testing/SwiftBets.BuildingBlocks.Testing.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Migrations/*.sql" />
+    <EmbeddedResource Include="Rollbacks/*.sql" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="Shouldly" />
   </ItemGroup>

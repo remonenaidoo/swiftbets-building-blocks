@@ -1,10 +1,8 @@
 using System.Text.Json;
-using Dapper;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SwiftBets.BuildingBlocks.Messaging;
-using SwiftBets.BuildingBlocks.Persistence;
 
 namespace SwiftBets.BuildingBlocks.Outbox;
 
@@ -14,13 +12,12 @@ namespace SwiftBets.BuildingBlocks.Outbox;
 /// never dropped.
 /// </summary>
 public sealed partial class OutboxRelay(
-    ISqlConnectionFactory connections,
+    IOutboxStore store,
     IEventPublisher publisher,
     IOptions<OutboxOptions> options,
     TimeProvider time,
     ILogger<OutboxRelay> logger) : BackgroundService
 {
-    private static readonly SqlResources Sql = SqlResources.For<OutboxRelay>();
     private readonly string _owner = $"{Environment.MachineName}:{Guid.NewGuid():N}";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -61,14 +58,7 @@ public sealed partial class OutboxRelay(
     public async Task<int> RelayOnceAsync(CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
-        IReadOnlyList<ClaimedMessage> claimed;
-        await using (var connection = await connections.OpenAsync(cancellationToken).ConfigureAwait(false))
-        {
-            claimed = (await connection.QueryAsync<ClaimedMessage>(new CommandDefinition(
-                Sql.Get("Outbox.ClaimBatch"),
-                new { options.Value.BatchSize, Now = now, Owner = _owner, LeaseUntil = now.AddSeconds(options.Value.LeaseSeconds) },
-                cancellationToken: cancellationToken)).ConfigureAwait(false)).OrderBy(m => m.Sequence).ToList();
-        }
+        var claimed = await store.ClaimAsync(options.Value.BatchSize, now, _owner, now.AddSeconds(options.Value.LeaseSeconds), cancellationToken).ConfigureAwait(false);
 
         if (claimed.Count == 0)
         {
@@ -93,7 +83,7 @@ public sealed partial class OutboxRelay(
                     {
                         OutboxMetrics.Failed.Inc();
                         LogPublishFailed(ex, message.Id, message.Topic, message.AttemptCount + 1);
-                        await MarkFailedAsync(message, ex, token).ConfigureAwait(false);
+                        await MarkFailedAsync(message, ex).ConfigureAwait(false);
                         return;
                     }
                 }
@@ -101,44 +91,26 @@ public sealed partial class OutboxRelay(
 
         if (!sent.IsEmpty)
         {
-            await using var connection = await connections.OpenAsync(cancellationToken).ConfigureAwait(false);
-            await connection.ExecuteAsync(new CommandDefinition(
-                Sql.Get("Outbox.MarkSent"),
-                new { Ids = sent.ToList(), Now = time.GetUtcNow(), Owner = _owner },
-                cancellationToken: CancellationToken.None)).ConfigureAwait(false);
+            await store.MarkSentAsync([.. sent], time.GetUtcNow(), _owner, CancellationToken.None).ConfigureAwait(false);
             OutboxMetrics.Published.Inc(sent.Count);
         }
 
         return sent.Count;
     }
 
-    private async Task MarkFailedAsync(ClaimedMessage message, Exception exception, CancellationToken cancellationToken)
+    private Task MarkFailedAsync(OutboxMessage message, Exception exception)
     {
         var backoff = TimeSpan.FromSeconds(Math.Min(Math.Pow(2, message.AttemptCount + 1), options.Value.MaxBackoffSeconds));
-        await using var connection = await connections.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await connection.ExecuteAsync(new CommandDefinition(
-            Sql.Get("Outbox.MarkFailed"),
-            new
-            {
-                message.Id,
-                Owner = _owner,
-                NextAttemptAt = time.GetUtcNow() + backoff,
-                LastError = exception.Message.Length > 2000 ? exception.Message[..2000] : exception.Message,
-            },
-            cancellationToken: CancellationToken.None)).ConfigureAwait(false);
+        var error = exception.Message.Length > 2000 ? exception.Message[..2000] : exception.Message;
+        return store.MarkFailedAsync(message.Id, _owner, time.GetUtcNow() + backoff, error, CancellationToken.None);
     }
 
-    private async Task UpdateBacklogAsync(CancellationToken cancellationToken)
-    {
-        await using var connection = await connections.OpenAsync(cancellationToken).ConfigureAwait(false);
-        OutboxMetrics.Pending.Set(await connection.ExecuteScalarAsync<long>(new CommandDefinition(Sql.Get("Outbox.CountPending"), cancellationToken: cancellationToken)).ConfigureAwait(false));
-    }
+    private async Task UpdateBacklogAsync(CancellationToken cancellationToken) =>
+        OutboxMetrics.Pending.Set(await store.CountPendingAsync(cancellationToken).ConfigureAwait(false));
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Outbox relay iteration failed")]
     private partial void LogRelayFailed(Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Outbox message {MessageId} to {Topic} failed on attempt {Attempt}")]
     private partial void LogPublishFailed(Exception exception, Guid messageId, string topic, int attempt);
-
-    private sealed record ClaimedMessage(long Sequence, Guid Id, string Topic, string MessageKey, byte[] Payload, string Headers, int AttemptCount);
 }
