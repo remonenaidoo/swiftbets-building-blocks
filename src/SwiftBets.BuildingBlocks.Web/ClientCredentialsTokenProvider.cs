@@ -42,6 +42,18 @@ public sealed class ClientCredentialsTokenProvider(HttpClient http, IOptions<Cli
         }
     }
 
+    /// <summary>
+    /// Forgets a token the receiver rejected (the issuer restarted or rotated its key), so the next call fetches a
+    /// fresh one instead of reusing a dead token until it would have expired. A newer token is left alone.
+    /// </summary>
+    public void Invalidate(string rejectedToken)
+    {
+        if (string.Equals(_token, rejectedToken, StringComparison.Ordinal))
+        {
+            _renewAt = DateTimeOffset.MinValue;
+        }
+    }
+
     public void Dispose() => _gate.Dispose();
 
     private sealed record TokenBody(string AccessToken, int ExpiresIn);
